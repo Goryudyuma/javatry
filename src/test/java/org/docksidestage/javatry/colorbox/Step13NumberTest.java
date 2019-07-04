@@ -138,19 +138,7 @@ public class Step13NumberTest extends PlainTestCase {
                 .map(one -> ((Map) one.getContent()).values())
                 .filter(one -> !one.isEmpty())
                 .flatMap(one -> one.stream())
-                .map(one -> {
-                    if (one instanceof String) {
-                        try {
-                            return Integer.valueOf((String) one);
-                        } catch (Exception e) {
-                            return 0;
-                        }
-                    }
-                    if (one instanceof Number) {
-                        return one;
-                    }
-                    return 0;
-                })
+                .filter(one -> one instanceof Integer)
                 .reduce(0, (a, b) -> ((Integer) a) + ((Integer) b));
         log(sum);
     }
