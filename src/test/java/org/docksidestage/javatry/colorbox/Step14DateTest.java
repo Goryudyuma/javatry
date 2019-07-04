@@ -15,6 +15,20 @@
  */
 package org.docksidestage.javatry.colorbox;
 
+import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.docksidestage.bizfw.colorbox.ColorBox;
+import org.docksidestage.bizfw.colorbox.yours.YourPrivateRoom;
 import org.docksidestage.unit.PlainTestCase;
 
 /**
@@ -33,6 +47,16 @@ public class Step14DateTest extends PlainTestCase {
      * (カラーボックスに入っている日付をスラッシュ区切り (e.g. 2019/04/24) のフォーマットしたら？)
      */
     public void test_formatDate() {
+        List<ColorBox> colorBoxList = new YourPrivateRoom().getColorBoxList();
+
+        colorBoxList.stream()
+                .flatMap(colorBox -> colorBox.getSpaceList().stream())
+                .map(one -> one.getContent())
+                .filter(one -> one != null)
+                .filter(one -> one instanceof LocalDate)
+                .map(one -> (LocalDate) one)
+                .map(one -> one.format(DateTimeFormatter.ofPattern("yyyy/MM/dd")))
+                .forEach(one -> System.out.println(one));
     }
 
     /**
@@ -40,6 +64,28 @@ public class Step14DateTest extends PlainTestCase {
      * (yellowのカラーボックスに入っているSetの中のスラッシュ区切り (e.g. 2019/04/24) の日付文字列をLocalDateに変換してtoString()したら？)
      */
     public void test_parseDate() {
+        List<ColorBox> colorBoxList = new YourPrivateRoom().getColorBoxList();
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy/MM/dd");
+
+        colorBoxList.stream()
+                .filter(colorBox -> colorBox.getColor().getColorName().equals("yellow"))
+                .flatMap(colorBox -> colorBox.getSpaceList().stream())
+                .map(one -> one.getContent())
+                .filter(one -> one instanceof Set)
+                .map(one -> (Set) one)
+                .flatMap(one -> one.stream())
+                .filter(one -> one instanceof String)
+                .map(one -> one.toString())
+                .map(one -> {
+                    try {
+                        return simpleDateFormat.parse(one.toString()).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                    } catch (ParseException e) {
+                        return "";
+                    }
+                })
+                .filter(one -> !one.equals(""))
+                .forEach(one -> System.out.println(one.toString()));
     }
 
     /**
@@ -64,6 +110,24 @@ public class Step14DateTest extends PlainTestCase {
      * (yellowのカラーボックスに入っている二つの日付は何日離れている？)
      */
     public void test_diffDay() {
+        List<ColorBox> colorBoxList = new YourPrivateRoom().getColorBoxList();
+
+        List<LocalDate> ans = colorBoxList.stream()
+                .filter(colorBox -> colorBox.getColor().getColorName().equals("yellow"))
+                .flatMap(colorBox -> colorBox.getSpaceList().stream())
+                .map(one -> one.getContent())
+                .filter(one -> one instanceof LocalDate || one instanceof LocalDateTime)
+                .map(one -> {
+                    if (one instanceof LocalDate) {
+                        return ((LocalDate) one).atTime(0, 0, 0);
+                    } else {
+                        return (LocalDateTime) one;
+                    }
+                })
+                .map(one -> one.toLocalDate())
+                .collect(Collectors.toList());
+
+        System.out.println(ChronoUnit.DAYS.between(ans.get(0), ans.get(1)));
     }
 
     /**
@@ -75,6 +139,44 @@ public class Step14DateTest extends PlainTestCase {
      * redのカラーボックスに入っているLong型を日数として足して、カラーボックスに入っているリストの中のBigDecimalの整数値が3の小数点第一位の数を日数として引いた日付は？)
      */
     public void test_birthdate() {
+        List<ColorBox> colorBoxList = new YourPrivateRoom().getColorBoxList();
+
+        colorBoxList.stream()
+                .filter(colorBox -> colorBox.getColor().getColorName().equals("yellow"))
+                .flatMap(colorBox -> colorBox.getSpaceList().stream())
+                .map(one -> one.getContent())
+                .filter(one -> one instanceof LocalDate)
+                .map(one -> ((LocalDate) one).plusMonths(colorBoxList.stream()
+                        .filter(colorBox -> colorBox.getColor().getColorName().equals("yellow"))
+                        .flatMap(colorBox -> colorBox.getSpaceList().stream())
+                        .map(two -> two.getContent())
+                        .filter(two -> two instanceof LocalDateTime)
+                        .map(two -> ((LocalDateTime) two).getSecond())
+                        .map(two -> two.longValue())
+                        .collect(Collectors.toList())
+                        .get(0)))
+                .map(one -> ((LocalDate) one).plusDays(colorBoxList.stream()
+                        .filter(colorBox -> colorBox.getColor().getColorName().equals("red"))
+                        .flatMap(colorBox -> colorBox.getSpaceList().stream())
+                        .map(two -> two.getContent())
+                        .filter(two -> two instanceof Long)
+                        .map(two -> (Long) two)
+                        .collect(Collectors.toList())
+                        .get(0)))
+                .map(one -> (one.minusDays((long) ((List) colorBoxList.stream()
+                        .filter(colorBox -> colorBox.getColor().getColorName().equals("yellow"))
+                        .flatMap(colorBox -> colorBox.getSpaceList().stream())
+                        .map(two -> two.getContent())
+                        .filter(two -> two instanceof List)
+                        .map(two -> (List) two)
+                        .flatMap(two -> two.stream())
+                        .filter(two -> two instanceof BigDecimal)
+                        .map(two -> ((BigDecimal) two).doubleValue())
+                        .filter(two -> ((Double) two).longValue() % 10 == 3)
+                        .map(two -> ((long) (((double) two) * 10)) % 10)
+                        .collect(Collectors.toList())).get(0))))
+                .forEach(one -> System.out.println(one));
+
     }
 
     /**
@@ -82,5 +184,14 @@ public class Step14DateTest extends PlainTestCase {
      * (カラーボックスに入っているLocalTimeの秒は？)
      */
     public void test_beReader() {
+        List<ColorBox> colorBoxList = new YourPrivateRoom().getColorBoxList();
+
+        colorBoxList.stream()
+                .flatMap(colorBox -> colorBox.getSpaceList().stream())
+                .map(one -> one.getContent())
+                .filter(one -> one != null)
+                .filter(one -> one instanceof LocalDateTime)
+                .map(one -> ((LocalDateTime) one).getSecond())
+                .forEach(one -> System.out.println(one));
     }
 }
